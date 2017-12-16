@@ -1,0 +1,8 @@
+[package]
+name = "combine_k"
+version = "0.1.0"
+authors = ["Michael Ratliff <email@michaelratliff.com>"]
+
+[dependencies]
+rand = "0.3"
+termion = "1"
