@@ -13,7 +13,7 @@ pub enum Direction {
 
 #[derive(Clone)]
 pub struct Board {
-    pub tiles: Vec<Tile>,
+    pub tiles: [Tile; SIZE * SIZE],
     pub score: u32
 }
 
@@ -34,7 +34,7 @@ impl fmt::Display for Board {
 impl Board {
     pub fn new() -> Self {
         Board {
-            tiles: vec![Tile::Empty; SIZE * SIZE],
+            tiles: [Tile::Empty; SIZE * SIZE],
             score: 0
         }
     }
