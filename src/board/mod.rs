@@ -50,32 +50,42 @@ impl Board {
         }
     }
 
-    pub fn move_board(&mut self, m: Direction) -> bool {
+    pub fn move_board(&self, m: Direction) -> Option<Self> {
+        let mut board = self.clone();
+
+        let did_move;
         if m == Direction::Up || m == Direction::Left {
-            (0..SIZE*SIZE)
-                .map(|i| self.move_tile(m,i)).collect::<Vec<bool>>()
-                .into_iter().any(|x| x)
+            did_move = (0..SIZE*SIZE)
+                .map(|i| board.move_tile(m,i)).collect::<Vec<bool>>()
+                .into_iter().any(|x| x);
         } else {
-            (0..SIZE*SIZE).rev()
-                .map(|i| self.move_tile(m,i)).collect::<Vec<bool>>()
-                .into_iter().any(|x| x)
+            did_move = (0..SIZE*SIZE).rev()
+                .map(|i| board.move_tile(m,i)).collect::<Vec<bool>>()
+                .into_iter().any(|x| x);
+        }
+
+        if did_move {
+            Some(board)
+        } else {
+            None
         }
     }
 
-    pub fn add_tile(&mut self) -> bool {
+    pub fn add_tile(&self) -> Option<Self> {
         let (empty_tiles, _): (Vec<usize>,Vec<Tile>) = self.tiles.iter().enumerate()
             .filter(|&(_, &x)| x == Tile::Empty).unzip();
 
         let empty_count: usize = empty_tiles.len();
         if empty_count > 0 {
+            let mut board = self.clone();
             let selected = rand::random::<usize>() % empty_count;
             let value: u8 = if rand::random::<f32>() > 0.9 { 2 } else { 1 };
 
-            self.tiles[empty_tiles[selected]] = Tile::Occupied(value);
+            board.tiles[empty_tiles[selected]] = Tile::Occupied(value);
 
-            true
+            Some(board)
         } else {
-            false
+            None
         }
 
     }

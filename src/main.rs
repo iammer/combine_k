@@ -39,29 +39,27 @@ impl std::ops::Drop for UI {
 fn main() {
     let mut ui=UI::new();
 
-    let mut b = Board::new();
+    let mut b = Board::new().add_tile().unwrap();
 
-    b.add_tile();
     ui.draw(&b);
 
     for c in stdin().keys() {
-        let valid_move = match c.unwrap() {
+        let move_result = match c.unwrap() {
             Key::Char('q') => break,
             Key::Char('h') => b.move_board(Direction::Left),
             Key::Char('j') => b.move_board(Direction::Down),
             Key::Char('k') => b.move_board(Direction::Up),
             Key::Char('l') => b.move_board(Direction::Right),
-            _ => { ui.invalid(); false }
+            _ => { ui.invalid(); None }
         };
 
-        if !valid_move {
-            continue
-        }
-
-        if b.add_tile() {
-            ui.draw(&b);
-        } else {
-            break;
+        if let Some(r) = move_result {
+            if let Some(r) = r.add_tile() {
+                ui.draw(&r);
+                b = r;
+            } else {
+                break;
+            }
         }
     }
 
