@@ -1,5 +1,5 @@
 use std::fmt;
-use termion::color;
+use ui::termion::color;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Tile {

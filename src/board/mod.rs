@@ -81,7 +81,7 @@ impl Board {
             let selected = rand::random::<usize>() % empty_count;
             let value: u8 = if rand::random::<f32>() > 0.9 { 2 } else { 1 };
 
-            board.tiles[empty_tiles[selected]] = Tile::Occupied(value);
+            board.tiles[empty_tiles[selected]] = Tile::Occupied(value);;
 
             Some(board)
         } else {
