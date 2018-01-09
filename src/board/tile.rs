@@ -7,7 +7,7 @@ pub enum Tile {
     Occupied(u8)
 }
 
-const A: u8 = 64; 
+const ASCII_START: u8 = ('A' as u8) - 1; 
 
 impl Tile {
     pub fn next(&self) -> Tile {
@@ -23,32 +23,34 @@ impl Tile {
             _ => 0
         }
     }
+
 }
 
 impl fmt::Display for Tile {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}{}{}", color::Fg(*self), match self {
-            &Tile::Empty => ' ',
-            &Tile::Occupied(c) if c > 0 && c <= 27 => (A + c) as char,
-            &Tile::Occupied(_) => '?'
+        write!(f, "{}{}{}", color::Fg(*self), match *self {
+            Tile::Empty => ' ',
+            Tile::Occupied(c) if c > 0 && c <= 27 => (ASCII_START + c) as char,
+            Tile::Occupied(_) => '?'
         }, color::Fg(color::Reset))
     }
 }
 
 impl color::Color for Tile {
     fn write_fg(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            &Tile::Occupied(1) => color::Blue.write_fg(f),
-            &Tile::Occupied(2) => color::Red.write_fg(f),
-            &Tile::Occupied(3) => color::Green.write_fg(f),
-            &Tile::Occupied(4) => color::Cyan.write_fg(f),
-            &Tile::Occupied(5) => color::Magenta.write_fg(f),
-            &Tile::Occupied(6) => color::Yellow.write_fg(f),
-            &Tile::Occupied(7) => color::LightBlue.write_fg(f),
-            &Tile::Occupied(8) => color::LightRed.write_fg(f),
-            &Tile::Occupied(9) => color::LightGreen.write_fg(f),
-            &Tile::Occupied(10) => color::LightCyan.write_fg(f),
-            &Tile::Occupied(11) => color::LightMagenta.write_fg(f),
+        match *self {
+            Tile::Occupied(1) => color::Blue.write_fg(f),
+            Tile::Occupied(2) => color::Red.write_fg(f),
+            Tile::Occupied(3) => color::Green.write_fg(f),
+            Tile::Occupied(4) => color::Cyan.write_fg(f),
+            Tile::Occupied(5) => color::Magenta.write_fg(f),
+            Tile::Occupied(6) => color::Yellow.write_fg(f),
+            Tile::Occupied(7) => color::LightBlue.write_fg(f),
+            Tile::Occupied(8) => color::LightRed.write_fg(f),
+            Tile::Occupied(9) => color::LightGreen.write_fg(f),
+            Tile::Occupied(10) => color::LightCyan.write_fg(f),
+            Tile::Occupied(11) => color::LightMagenta.write_fg(f),
+            Tile::Occupied(12) => color::LightYellow.write_fg(f),
             _ => color::White.write_fg(f)
         }
     }

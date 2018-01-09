@@ -13,17 +13,19 @@ fn main() {
     loop {
         ui.draw(&b);
 
-        if let Some(r) = match ui.next_command() {
+        let command_result = match ui.next_command() {
             Command::Quit => break,
             Command::Move(d) => b.move_board(d),
+            Command::Restart => Some(Board::new()),
             Command::Back => {
                 if let Some(r) = boards.pop() {
                     b=r
                 }
                 None
             },
-            Command::Restart => Some(Board::new())
-        } {
+        };
+
+        if let Some(r) = command_result {
             if let Some(r) = r.add_tile() {
                 boards.push(b);
                 b=r;

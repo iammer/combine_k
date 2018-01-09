@@ -6,9 +6,16 @@ mod tile;
 pub use self::tile::Tile;
 
 const SIZE: usize = 4;
+
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
     Up, Down, Left, Right
+}
+
+struct SlideResult {
+    tile: Tile,
+    position: usize,
+    score: u32
 }
 
 #[derive(Clone)]
@@ -39,17 +46,7 @@ impl Board {
         }
     }
 
-    fn move_tile(&mut self, m: Direction, i: usize) -> bool {
-        if let Some((n, merged, s)) = self.slide(m, i) {
-            self.tiles[i] = Tile::Empty;
-            self.tiles[n] = merged;
-            self.score += s;
-            true
-        } else {
-            false
-        }
-    }
-
+    //Moves all tiles on the board in direction m
     pub fn move_board(&self, m: Direction) -> Option<Self> {
         let mut board = self.clone();
 
@@ -71,6 +68,7 @@ impl Board {
         }
     }
 
+    //Adds a new tile to board in a random empty space
     pub fn add_tile(&self) -> Option<Self> {
         let (empty_tiles, _): (Vec<usize>,Vec<Tile>) = self.tiles.iter().enumerate()
             .filter(|&(_, &x)| x == Tile::Empty).unzip();
@@ -90,32 +88,63 @@ impl Board {
 
     }
 
+    //Slides a single tile in direction returns true if tile was moved
+    fn move_tile(&mut self, m: Direction, i: usize) -> bool {
+        if let Some(r) = self.slide(m, i) {
+            self.tiles[i] = Tile::Empty;
+            self.tiles[r.position] = r.tile;
+            self.score += r.score;
+            true
+        } else {
+            false
+        }
+    }
+
+    //Finds next tile in dir
+    //Returns None if no tile (dir is edge)
+    //Returns Some((position, tile)) if tile exists
     fn tile_to(&self, dir: Direction, i: usize) -> Option<(usize, Tile)> {
         space_to(dir, i).map(|n| (n, self.tiles[n]))
     }
 
-    fn slide(&self, dir: Direction, i: usize) -> Option<(usize, Tile, u32)> {
+    //Gets result of sliding tile @ position i in dir
+    //Returns None if tile was not able to slide
+    //Returns Some(SlideResult) if tile could slide
+    fn slide(&self, dir: Direction, i: usize) -> Option<SlideResult> {
         let c = self.tiles[i];
         if c == Tile::Empty {
             None
         } else {
-            let (n, t, s) = self.slide_next(dir, i, c);
-            if n == i {
+            let r = self.slide_next(dir, i, c);
+            if r.position == i {
                 None
             } else {
-                Some((n, t, s))
+                Some(r)
             }
         }
     }
 
-    fn slide_next(&self, dir: Direction, i: usize, t: Tile) -> (usize, Tile, u32) {
+    //Finds result of sliding tile in direction dir, always returns a slide result
+    //(slide result may be a 0-tile slide to the same position)
+    fn slide_next(&self, dir: Direction, i: usize, t: Tile) -> SlideResult {
         match self.tile_to(dir, i) {
+            //If tile is empty keep going
             Some((n, Tile::Empty)) => self.slide_next(dir, n, t),
+            //If tile exists and is the same value merge
             Some((n, o)) if o == t => {
                 let new_tile = t.next();
-                (n, new_tile, new_tile.score())
+                SlideResult {
+                    position: n,
+                    tile: new_tile,
+                    score: new_tile.score()
+                }
             },
-            _ => (i, t, 0)
+            //Either there is an edge or a non-matching tile
+            _ => SlideResult {
+                position: i,
+                tile: t,
+                score: 0
+            }
         }
     }
 
@@ -129,6 +158,7 @@ fn from_row_col(r: usize, c: usize) -> usize {
     r * SIZE + c
 }
 
+//Returns Some(position) of the next tile in dir or None if dir is an edge
 fn space_to(dir: Direction, i: usize) -> Option<usize> {
     match (dir, to_row_col(i)) {
         (Direction::Up, (0, _)) => None,
@@ -141,4 +171,4 @@ fn space_to(dir: Direction, i: usize) -> Option<usize> {
         (Direction::Right, (r, c)) => Some(from_row_col(r, c+1))
     }
 }
-
+    
