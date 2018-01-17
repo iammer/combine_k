@@ -4,25 +4,42 @@ use ui::termion::color;
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Tile {
     Empty,
-    Occupied(u8)
+    Occupied(u8),
+    WillOccupy(u8)
 }
 
 const ASCII_START: u8 = ('A' as u8) - 1; 
 
 impl Tile {
-    pub fn next(&self) -> Tile {
-        match *self {
-            Tile::Occupied(n) => Tile::Occupied(n+1),
+    pub fn next(self) -> Tile {
+        match self {
+            Tile::Occupied(n) => Tile::WillOccupy(n+1),
             x => x
         }
     }
 
-    pub fn score(&self) -> u32 {
-        match *self {
-            Tile::Occupied(x) => 2u32.pow(x as u32),
+    pub fn finalize(self) -> Tile {
+        match self {
+            Tile::WillOccupy(n) => Tile::Occupied(n),
+            x => x
+        }
+    }
+
+    pub fn score(self) -> u32 {
+        match self {
+            Tile::WillOccupy(x) => 2u32.pow(x as u32),
             _ => 0
         }
     }
+
+    pub fn can_merge(self, o: Self) -> bool {
+        if let Tile::Occupied(_) = self {
+            self == o
+        } else {
+            false
+        }
+    }
+        
 
 }
 
@@ -31,7 +48,7 @@ impl fmt::Display for Tile {
         write!(f, "{}{}{}", color::Fg(*self), match *self {
             Tile::Empty => ' ',
             Tile::Occupied(c) if c > 0 && c <= 27 => (ASCII_START + c) as char,
-            Tile::Occupied(_) => '?'
+            _ => '?'
         }, color::Fg(color::Reset))
     }
 }

@@ -2,6 +2,9 @@ extern crate rand;
 
 use std::fmt;
 
+#[cfg(test)]
+mod tests;
+
 mod tile;
 pub use self::tile::Tile;
 
@@ -18,9 +21,9 @@ struct SlideResult {
     score: u32
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Board {
-    pub tiles: [Tile; SIZE * SIZE],
+    pub tiles: Vec<Tile>,
     pub score: u32
 }
 
@@ -41,8 +44,15 @@ impl fmt::Display for Board {
 impl Board {
     pub fn new() -> Self {
         Board {
-            tiles: [Tile::Empty; SIZE * SIZE],
+            tiles: vec![Tile::Empty; SIZE * SIZE],
             score: 0
+        }
+    }
+
+    fn finalize(self) -> Self {
+        Board {
+            tiles: self.tiles.into_iter().map(|t| t.finalize()).collect(),
+            score: self.score
         }
     }
 
@@ -62,7 +72,7 @@ impl Board {
         }
 
         if did_move {
-            Some(board)
+            Some(board.finalize())
         } else {
             None
         }
@@ -79,7 +89,7 @@ impl Board {
             let selected = rand::random::<usize>() % empty_count;
             let value: u8 = if rand::random::<f32>() > 0.9 { 2 } else { 1 };
 
-            board.tiles[empty_tiles[selected]] = Tile::Occupied(value);;
+            board.tiles[empty_tiles[selected]] = Tile::Occupied(value);
 
             Some(board)
         } else {
@@ -131,7 +141,7 @@ impl Board {
             //If tile is empty keep going
             Some((n, Tile::Empty)) => self.slide_next(dir, n, t),
             //If tile exists and is the same value merge
-            Some((n, o)) if o == t => {
+            Some((n, o)) if t.can_merge(o) => {
                 let new_tile = t.next();
                 SlideResult {
                     position: n,
@@ -147,7 +157,6 @@ impl Board {
             }
         }
     }
-
 }
 
 fn to_row_col(i: usize) -> (usize, usize) {
