@@ -9,6 +9,8 @@ mod tile;
 pub use self::tile::Tile;
 
 const SIZE: usize = 4;
+const LENGTH: usize = SIZE * SIZE;
+const NEW_TILE_RATIO: f32 = 0.9;
 
 #[derive(Copy, Clone, PartialEq, Eq)]
 pub enum Direction {
@@ -17,8 +19,7 @@ pub enum Direction {
 
 struct SlideResult {
     tile: Tile,
-    position: usize,
-    score: u32
+    position: usize
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,32 +45,33 @@ impl fmt::Display for Board {
 impl Board {
     pub fn new() -> Self {
         Board {
-            tiles: vec![Tile::Empty; SIZE * SIZE],
+            tiles: vec![Tile::Empty; LENGTH],
             score: 0
         }
     }
 
     fn finalize(self) -> Self {
+        let score: u32 = self.tiles.iter().map(|t| t.score()).sum();
         Board {
             tiles: self.tiles.into_iter().map(|t| t.finalize()).collect(),
-            score: self.score
+            score: self.score + score
         }
     }
 
     //Moves all tiles on the board in direction m
     pub fn move_board(&self, m: Direction) -> Option<Self> {
         let mut board = self.clone();
+        let scan_direction = m == Direction::Up || m == Direction::Left;
 
-        let did_move;
-        if m == Direction::Up || m == Direction::Left {
-            did_move = (0..SIZE*SIZE)
-                .map(|i| board.move_tile(m,i)).collect::<Vec<bool>>()
-                .into_iter().any(|x| x);
+        let scan_sequence = if scan_direction {
+            (0..LENGTH).collect::<Vec<usize>>()
         } else {
-            did_move = (0..SIZE*SIZE).rev()
-                .map(|i| board.move_tile(m,i)).collect::<Vec<bool>>()
-                .into_iter().any(|x| x);
-        }
+            (0..LENGTH).rev().collect::<Vec<usize>>()
+        };
+
+        let did_move = scan_sequence.into_iter()
+            .map(|i| board.move_tile(m,i)).collect::<Vec<bool>>()
+            .into_iter().any(|x| x);
 
         if did_move {
             Some(board.finalize())
@@ -78,16 +80,22 @@ impl Board {
         }
     }
 
+    pub fn empty_tiles(&self) -> Vec<usize> {
+        self.tiles.iter()
+            .enumerate()
+            .filter(|&(_, &x)| x == Tile::Empty)
+            .map(|(i,_)| i)
+            .collect()
+    }
+
     //Adds a new tile to board in a random empty space
     pub fn add_tile(&self) -> Option<Self> {
-        let (empty_tiles, _): (Vec<usize>,Vec<Tile>) = self.tiles.iter().enumerate()
-            .filter(|&(_, &x)| x == Tile::Empty).unzip();
-
+        let empty_tiles =  self.empty_tiles();
         let empty_count: usize = empty_tiles.len();
         if empty_count > 0 {
             let mut board = self.clone();
             let selected = rand::random::<usize>() % empty_count;
-            let value: u8 = if rand::random::<f32>() > 0.9 { 2 } else { 1 };
+            let value: u8 = if rand::random::<f32>() > NEW_TILE_RATIO { 2 } else { 1 };
 
             board.tiles[empty_tiles[selected]] = Tile::Occupied(value);
 
@@ -95,7 +103,6 @@ impl Board {
         } else {
             None
         }
-
     }
 
     //Slides a single tile in direction returns true if tile was moved
@@ -103,7 +110,6 @@ impl Board {
         if let Some(r) = self.slide(m, i) {
             self.tiles[i] = Tile::Empty;
             self.tiles[r.position] = r.tile;
-            self.score += r.score;
             true
         } else {
             false
@@ -142,18 +148,15 @@ impl Board {
             Some((n, Tile::Empty)) => self.slide_next(dir, n, t),
             //If tile exists and is the same value merge
             Some((n, o)) if t.can_merge(o) => {
-                let new_tile = t.next();
                 SlideResult {
                     position: n,
-                    tile: new_tile,
-                    score: new_tile.score()
+                    tile: t.next()
                 }
             },
             //Either there is an edge or a non-matching tile
             _ => SlideResult {
                 position: i,
-                tile: t,
-                score: 0
+                tile: t
             }
         }
     }

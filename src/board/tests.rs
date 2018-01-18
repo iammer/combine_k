@@ -1,4 +1,27 @@
+#![feature(trace_macros)]
+trace_macros!(true);
+
 use super::*;
+
+#[test]
+fn add_tile() {
+    let mut b = Board::new();
+
+    for expected_count in (0..LENGTH+1).rev() {
+        assert_eq!(b.empty_tiles().len(), expected_count);
+        assert_eq!(b.score, 0);
+
+        let result = b.add_tile();
+
+        if expected_count > 0 {
+            assert!(result.is_some());
+            b = result.unwrap();
+        } else {
+            assert!(result.is_none());
+        }
+    }
+
+}
 
 macro_rules! tile {
     (o) => { Tile::Empty };
@@ -38,7 +61,7 @@ macro_rules! assert_move {
 
 #[test]
 fn create_new() {
-    assert_eq!(Board::new().tiles.len(), 16);
+    assert_eq!(Board::new().tiles.len(), LENGTH);
 }
 
 #[test]
