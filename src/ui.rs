@@ -52,6 +52,11 @@ impl UI {
         write!(self.stdout, "Invalid").unwrap();
         self.stdout.flush().unwrap();
     }
+
+    pub fn game_over(&mut self) {
+        write!(self.stdout, "Game Over!\r\n").unwrap();
+        self.stdout.flush().unwrap();
+    }
 }
 
 impl Drop for UI {

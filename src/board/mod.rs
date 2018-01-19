@@ -17,9 +17,9 @@ pub enum Direction {
     Up, Down, Left, Right
 }
 
-struct SlideResult {
+struct TileMovement {
     tile: Tile,
-    position: usize
+    new_position: usize
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -50,6 +50,7 @@ impl Board {
         }
     }
 
+    //Adds WillOccupy tiles to score and transforms WillOccupy to Occupied Tiles
     fn finalize(self) -> Self {
         let score: u32 = self.tiles.iter().map(|t| t.score()).sum();
         Board {
@@ -58,19 +59,19 @@ impl Board {
         }
     }
 
-    //Moves all tiles on the board in direction m
-    pub fn move_board(&self, m: Direction) -> Option<Self> {
+    pub fn can_move(&self, dir: Direction) -> bool {
         let mut board = self.clone();
-        let scan_direction = m == Direction::Up || m == Direction::Left;
 
-        let scan_sequence = if scan_direction {
-            (0..LENGTH).collect::<Vec<usize>>()
-        } else {
-            (0..LENGTH).rev().collect::<Vec<usize>>()
-        };
+        scan_sequence(dir).any(|i| board.move_tile(dir, i))
+    }
 
-        let did_move = scan_sequence.into_iter()
-            .map(|i| board.move_tile(m,i)).collect::<Vec<bool>>()
+    //Moves all tiles on the board in direction m
+    pub fn move_board(&self, dir: Direction) -> Option<Self> {
+        let mut board = self.clone();
+
+        let did_move = scan_sequence(dir)
+            .map(|i| board.move_tile(dir,i))
+            .collect::<Vec<bool>>() //Collect and into_iter to prevent any from short-circuting
             .into_iter().any(|x| x);
 
         if did_move {
@@ -106,13 +107,20 @@ impl Board {
     }
 
     //Slides a single tile in direction returns true if tile was moved
-    fn move_tile(&mut self, m: Direction, i: usize) -> bool {
-        if let Some(r) = self.slide(m, i) {
-            self.tiles[i] = Tile::Empty;
-            self.tiles[r.position] = r.tile;
-            true
-        } else {
+    fn move_tile(&mut self, dir: Direction, i: usize) -> bool {
+        let c = self.tiles[i];
+
+        if c == Tile::Empty {
             false
+        } else {
+            let r = self.find_tile_movement(dir, i, c);
+            if r.new_position == i {
+                false
+            } else {
+                self.tiles[i] = Tile::Empty;
+                self.tiles[r.new_position] = r.tile;
+                true
+            }
         }
     }
 
@@ -123,42 +131,33 @@ impl Board {
         space_to(dir, i).map(|n| (n, self.tiles[n]))
     }
 
-    //Gets result of sliding tile @ position i in dir
-    //Returns None if tile was not able to slide
-    //Returns Some(SlideResult) if tile could slide
-    fn slide(&self, dir: Direction, i: usize) -> Option<SlideResult> {
-        let c = self.tiles[i];
-        if c == Tile::Empty {
-            None
-        } else {
-            let r = self.slide_next(dir, i, c);
-            if r.position == i {
-                None
-            } else {
-                Some(r)
-            }
-        }
-    }
-
     //Finds result of sliding tile in direction dir, always returns a slide result
     //(slide result may be a 0-tile slide to the same position)
-    fn slide_next(&self, dir: Direction, i: usize, t: Tile) -> SlideResult {
+    fn find_tile_movement(&self, dir: Direction, i: usize, t: Tile) -> TileMovement {
         match self.tile_to(dir, i) {
             //If tile is empty keep going
-            Some((n, Tile::Empty)) => self.slide_next(dir, n, t),
+            Some((n, Tile::Empty)) => self.find_tile_movement(dir, n, t),
             //If tile exists and is the same value merge
             Some((n, o)) if t.can_merge(o) => {
-                SlideResult {
-                    position: n,
+                TileMovement {
+                    new_position: n,
                     tile: t.next()
                 }
             },
             //Either there is an edge or a non-matching tile
-            _ => SlideResult {
-                position: i,
+            _ => TileMovement {
+                new_position: i,
                 tile: t
             }
         }
+    }
+
+    pub fn has_possible_moves(&self) -> bool {
+        self.empty_tiles().len() > 0 ||
+        self.can_move(Direction::Up) ||
+        self.can_move(Direction::Down) ||
+        self.can_move(Direction::Left) ||
+        self.can_move(Direction::Right)
     }
 }
 
@@ -181,6 +180,16 @@ fn space_to(dir: Direction, i: usize) -> Option<usize> {
         (Direction::Down, (r, c)) => Some(from_row_col(r+1, c)),
         (Direction::Left, (r, c)) => Some(from_row_col(r, c-1)),
         (Direction::Right, (r, c)) => Some(from_row_col(r, c+1))
+    }
+}
+
+//Returns a range indicating the order to iterate tile indexes
+//(Down and Right should be iterated in reverse order)
+fn scan_sequence(dir: Direction) -> Box<Iterator<Item=usize>> {
+    if dir == Direction::Up || dir == Direction::Left {
+        Box::new((0..LENGTH))
+    } else {
+        Box::new((0..LENGTH).rev())
     }
 }
     

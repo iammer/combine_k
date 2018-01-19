@@ -13,6 +13,10 @@ fn main() {
     loop {
         ui.draw(&b);
 
+        if !b.has_possible_moves() {
+            break;
+        }
+
         let command_result = match ui.next_command() {
             Command::Quit => break,
             Command::Move(d) => b.move_board(d),
@@ -34,5 +38,7 @@ fn main() {
             }
         }
     }
+    
+    ui.game_over();
 
 }

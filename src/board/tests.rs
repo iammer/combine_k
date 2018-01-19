@@ -1,6 +1,3 @@
-#![feature(trace_macros)]
-trace_macros!(true);
-
 use super::*;
 
 #[test]
@@ -165,4 +162,67 @@ fn up_and_down() {
         B,A,B,C,
         B,B,B,B | ( 4 + 4 + 4 + 8 + 4)
     );
+}
+
+#[test]
+fn can_move() {
+    let b = board!(
+        A,o,o,o,
+        o,o,o,o,
+        o,o,o,o,
+        o,o,o,o);
+
+    assert!(b.can_move(Direction::Down));
+    assert!(b.can_move(Direction::Right));
+    assert!(!b.can_move(Direction::Up));
+    assert!(!b.can_move(Direction::Left));
+
+    let b = board!(
+        A,A,o,o,
+        o,o,o,o,
+        o,o,o,o,
+        o,o,o,o);
+
+    assert!(b.can_move(Direction::Down));
+    assert!(b.can_move(Direction::Right));
+    assert!(b.can_move(Direction::Left));
+    assert!(!b.can_move(Direction::Up));
+
+    let b = board!(
+        A,A,B,C,
+        D,E,F,G,
+        H,I,J,K,
+        J,K,I,H);
+
+    assert!(b.can_move(Direction::Left));
+    assert!(b.can_move(Direction::Right));
+    assert!(!b.can_move(Direction::Down));
+    assert!(!b.can_move(Direction::Up));
+}
+
+#[test]
+fn has_possible_moves() {
+    let b = board!(
+        A,B,C,D,
+        E,F,G,H,
+        I,J,K,J,
+        H,I,J,o);
+
+    assert!(b.has_possible_moves());
+
+    let b = board!(
+        A,B,C,D,
+        E,F,G,H,
+        I,J,K,J,
+        H,I,A,A);
+
+    assert!(b.has_possible_moves());
+
+    let b = board!(
+        A,B,C,D,
+        E,F,G,H,
+        I,J,K,J,
+        H,I,B,A);
+
+    assert!(!b.has_possible_moves());
 }
